@@ -51,13 +51,13 @@ describe Devise::SamlSessionsController, type: :controller do
       end
 
       it "redirects to the associated IdP SSO target url" do
-        get :new, "SAMLResponse" => saml_response
+        get :new, params: {"SAMLResponse" => saml_response}
         expect(response).to redirect_to(%r(\Ahttp://idp_sso_url\?SAMLRequest=))
       end
 
       it "uses the DefaultIdpEntityIdReader" do
         expect(DeviseSamlAuthenticatable::DefaultIdpEntityIdReader).to receive(:entity_id)
-        get :new, "SAMLResponse" => saml_response
+        get :new, params: {"SAMLResponse" => saml_response}
       end
 
       context "with a specified idp entity id reader" do
@@ -77,7 +77,7 @@ describe Devise::SamlSessionsController, type: :controller do
         end
 
         it "redirects to the associated IdP SSO target url" do
-          get :new, entity_id: "http://www.example.com"
+          get :new, params: {entity_id: "http://www.example.com"}
           expect(response).to redirect_to(%r(\Ahttp://idp_sso_url\?SAMLRequest=))
         end
       end
@@ -151,7 +151,7 @@ describe Devise::SamlSessionsController, type: :controller do
     end
 
     it 'accepts a LogoutResponse and redirects sign_in' do
-      post :idp_sign_out, SAMLResponse: 'stubbed_response'
+      post :idp_sign_out, params: {SAMLResponse: 'stubbed_response'}
       expect(response.status).to eq 302
       expect(response).to redirect_to '/users/saml/sign_in'
     end
@@ -163,7 +163,7 @@ describe Devise::SamlSessionsController, type: :controller do
       end
 
       it "accepts a LogoutResponse for the associated slo_target_url and redirects to sign_in" do
-        post :idp_sign_out, SAMLRequest: "stubbed_logout_request"
+        post :idp_sign_out, params: {SAMLRequest: "stubbed_logout_request"}
         expect(response.status).to eq 302
         expect(idp_providers_adapter).to have_received(:settings).with(idp_entity_id)
         expect(response).to redirect_to "http://localhost/logout_response"
@@ -177,7 +177,7 @@ describe Devise::SamlSessionsController, type: :controller do
       end
 
       it 'accepts a LogoutResponse and returns success' do
-        post :idp_sign_out, SAMLResponse: 'stubbed_response'
+        post :idp_sign_out, params: {SAMLResponse: 'stubbed_response'}
         expect(response.status).to eq 302
         expect(response).to redirect_to test_url
       end
@@ -190,14 +190,14 @@ describe Devise::SamlSessionsController, type: :controller do
 
       it 'returns invalid request' do
         expect(User).not_to receive(:reset_session_key_for).with(name_id)
-        post :idp_sign_out, SAMLRequest: 'stubbed_request'
+        post :idp_sign_out, params: {SAMLRequest: 'stubbed_request'}
         expect(response.status).to eq 500
       end
     end
 
     it 'direct the resource to reset the session key' do
       expect(User).to receive(:reset_session_key_for).with(name_id)
-      post :idp_sign_out, SAMLRequest: 'stubbed_request'
+      post :idp_sign_out, params: {SAMLRequest: 'stubbed_request'}
       expect(response).to redirect_to response_url
     end
   end
