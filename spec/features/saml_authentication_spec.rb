@@ -10,55 +10,81 @@ describe "SAML Authentication", type: :feature do
   let(:idp_port) { 8009 }
   let(:sp_port)  { 8020 }
 
+  after(:each) do
+    puts "===== IdP logs ====="
+    Dir.glob(File.join(File.expand_path('../../support/idp/log', __FILE__), '*.log')) do |logfile|
+      puts File.read(logfile)
+    end
+    puts "===== SP logs ====="
+    Dir.glob(File.join(File.expand_path('../../support/sp/log', __FILE__), '*.log')) do |logfile|
+      puts File.read(logfile)
+    end
+  end
+
   shared_examples_for "it authenticates and creates users" do
     it "authenticates an existing user on a SP via an IdP" do
+      puts "Creating user..."
       create_user("you@example.com")
 
+      puts "Visiting SP..."
       visit 'http://localhost:8020/'
       expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
+      puts "Logging into IdP..."
       fill_in "Email", with: "you@example.com"
       fill_in "Password", with: "asdf"
       click_on "Sign in"
+      puts "Signed into SP..."
       expect(page).to have_content("you@example.com")
       expect(current_url).to eq("http://localhost:8020/")
     end
 
     it "creates a user on the SP from the IdP attributes" do
+      puts "Visiting SP..."
       visit 'http://localhost:8020/'
       expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
+      puts "Logging into IdP..."
       fill_in "Email", with: "you@example.com"
       fill_in "Password", with: "asdf"
       click_on "Sign in"
+      puts "Signed into SP..."
       expect(page).to have_content("you@example.com")
       expect(page).to have_content("A User")
       expect(current_url).to eq("http://localhost:8020/")
     end
 
     it "updates a user on the SP from the IdP attributes" do
+      puts "Creating user..."
       create_user("you@example.com")
 
+      puts "Visiting SP..."
       visit 'http://localhost:8020/'
       expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
+      puts "Logging into IdP..."
       fill_in "Email", with: "you@example.com"
       fill_in "Password", with: "asdf"
       click_on "Sign in"
+      puts "Signed into SP..."
       expect(page).to have_content("you@example.com")
       expect(page).to have_content("A User")
       expect(current_url).to eq("http://localhost:8020/")
     end
 
     it "logs a user out of the IdP via the SP" do
+      puts "Signing in..."
       sign_in
 
+      puts "Visiting SP..."
       # prove user is still signed in
       visit 'http://localhost:8020/'
       expect(page).to have_content("you@example.com")
       expect(current_url).to eq("http://localhost:8020/")
 
+      puts "Logging out..."
       click_on "Log out"
       #confirm the logout response redirected to the SP which in turn attempted to sign th e
       expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
 
+      puts "Visiting SP..."
       # prove user is now signed out
       visit 'http://localhost:8020/'
       expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
@@ -67,10 +93,13 @@ describe "SAML Authentication", type: :feature do
 
   shared_examples_for "it logs a user out via the IdP" do
     it 'logs a user out of the SP via the IdP' do
+      puts "Signing in..."
       sign_in
 
+      puts "Logging out..."
       visit "http://localhost:#{idp_port}/saml/sp_sign_out"
 
+      puts "Visiting SP..."
       visit 'http://localhost:8020/'
       expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
     end
@@ -81,10 +110,14 @@ describe "SAML Authentication", type: :feature do
       create_app('idp', 'INCLUDE_SUBJECT_IN_ATTRIBUTES' => "true")
       create_app('sp', 'USE_SUBJECT_TO_AUTHENTICATE' => "false")
       @idp_pid = start_app('idp', idp_port)
+      puts "Started IdP: #{@idp_pid.inspect}"
       @sp_pid  = start_app('sp',  sp_port)
+      puts "Started SP: #{@sp_pid.inspect}"
     end
     after(:each) do
+      puts "Stopping IdP: #{@idp_pid.inspect}"
       stop_app(@idp_pid)
+      puts "Stopping SP: #{@sp_pid.inspect}"
       stop_app(@sp_pid)
     end
 
@@ -96,10 +129,14 @@ describe "SAML Authentication", type: :feature do
       create_app('idp', 'INCLUDE_SUBJECT_IN_ATTRIBUTES' => "false")
       create_app('sp', 'USE_SUBJECT_TO_AUTHENTICATE' => "true")
       @idp_pid = start_app('idp', idp_port)
+      puts "Started IdP: #{@idp_pid.inspect}"
       @sp_pid  = start_app('sp',  sp_port)
+      puts "Started SP: #{@sp_pid.inspect}"
     end
     after(:each) do
+      puts "Stopping IdP: #{@idp_pid.inspect}"
       stop_app(@idp_pid)
+      puts "Stopping SP: #{@sp_pid.inspect}"
       stop_app(@sp_pid)
     end
 
@@ -111,10 +148,14 @@ describe "SAML Authentication", type: :feature do
       create_app('idp', 'INCLUDE_SUBJECT_IN_ATTRIBUTES' => "false")
       create_app('sp', 'USE_SUBJECT_TO_AUTHENTICATE' => "true", 'SAML_SESSION_INDEX_KEY' => ":session_index")
       @idp_pid = start_app('idp', idp_port)
+      puts "Started IdP: #{@idp_pid.inspect}"
       @sp_pid  = start_app('sp',  sp_port)
+      puts "Started SP: #{@sp_pid.inspect}"
     end
     after(:each) do
+      puts "Stopping IdP: #{@idp_pid.inspect}"
       stop_app(@idp_pid)
+      puts "Stopping SP: #{@sp_pid.inspect}"
       stop_app(@sp_pid)
     end
 
@@ -127,10 +168,14 @@ describe "SAML Authentication", type: :feature do
       create_app('idp', 'INCLUDE_SUBJECT_IN_ATTRIBUTES' => "false")
       create_app('sp', 'USE_SUBJECT_TO_AUTHENTICATE' => "true", 'SAML_SESSION_INDEX_KEY' => "nil")
       @idp_pid = start_app('idp', idp_port)
+      puts "Started IdP: #{@idp_pid.inspect}"
       @sp_pid  = start_app('sp',  sp_port)
+      puts "Started SP: #{@sp_pid.inspect}"
     end
     after(:each) do
+      puts "Stopping IdP: #{@idp_pid.inspect}"
       stop_app(@idp_pid)
+      puts "Stopping SP: #{@sp_pid.inspect}"
       stop_app(@sp_pid)
     end
 
@@ -144,17 +189,23 @@ describe "SAML Authentication", type: :feature do
       create_app('sp', 'USE_SUBJECT_TO_AUTHENTICATE' => "true", 'IDP_SETTINGS_ADAPTER' => "IdpSettingsAdapter", 'IDP_ENTITY_ID_READER' => "OurEntityIdReader")
 
       @idp_pid = start_app('idp', idp_port)
+      puts "Started IdP: #{@idp_pid.inspect}"
       @sp_pid  = start_app('sp',  sp_port)
+      puts "Started SP: #{@sp_pid.inspect}"
     end
 
     after(:each) do
+      puts "Stopping IdP: #{@idp_pid.inspect}"
       stop_app(@idp_pid)
+      puts "Stopping SP: #{@sp_pid.inspect}"
       stop_app(@sp_pid)
     end
 
     it "authenticates an existing user on a SP via an IdP" do
+      puts "Creating user..."
       create_user("you@example.com")
 
+      puts "Visiting SP..."
       visit 'http://localhost:8020/users/saml/sign_in/?entity_id=http%3A%2F%2Flocalhost%3A8020%2Fsaml%2Fmetadata'
       expect(current_url).to match(%r(\Ahttp://www.example.com/\?SAMLRequest=))
     end
@@ -167,11 +218,15 @@ describe "SAML Authentication", type: :feature do
       create_app('sp', 'USE_SUBJECT_TO_AUTHENTICATE' => "true", 'SAML_FAILED_CALLBACK' => "OurSamlFailedCallbackHandler")
 
       @idp_pid = start_app('idp', idp_port)
+      puts "Started IdP: #{@idp_pid.inspect}"
       @sp_pid  = start_app('sp',  sp_port)
+      puts "Started SP: #{@sp_pid.inspect}"
     end
 
     after(:each) do
+      puts "Stopping IdP: #{@idp_pid.inspect}"
       stop_app(@idp_pid)
+      puts "Stopping SP: #{@sp_pid.inspect}"
       stop_app(@sp_pid)
     end
 
@@ -180,10 +235,13 @@ describe "SAML Authentication", type: :feature do
     context "a bad SAML Request" do
       let(:valid_destination) { "false" }
       it "redirects to the callback handler's redirect destination" do
+        puts "Creating user..."
         create_user("you@example.com")
 
+        puts "Visiting SP..."
         visit 'http://localhost:8020/'
         expect(current_url).to match(%r(\Ahttp://localhost:8009/saml/auth\?SAMLRequest=))
+        puts "Logging in..."
         fill_in "Email", with: "you@example.com"
         fill_in "Password", with: "asdf"
         click_on "Sign in"

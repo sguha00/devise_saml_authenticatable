@@ -41,6 +41,7 @@ end
 def stop_app(pid)
   if pid
     Process.kill(:INT, pid)
+    puts "Waiting for pid #{pid}..."
     Process.wait(pid)
   end
 end
